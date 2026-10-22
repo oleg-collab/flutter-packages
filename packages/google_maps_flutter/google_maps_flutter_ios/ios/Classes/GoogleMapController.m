@@ -249,7 +249,15 @@
       UIImage *image = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
         [self.mapView drawViewHierarchyInRect:self.mapView.bounds afterScreenUpdates:YES];
       }];
-      result([FlutterStandardTypedData typedDataWithBytes:UIImagePNGRepresentation(image)]);
+      NSData *imageData = UIImagePNGRepresentation(image);
+      if (imageData == nil) {
+        // Happens when the map view has no size yet (e.g. hidden behind a system
+        // dialog on first launch). FlutterStandardTypedData asserts on nil data,
+        // which crashed the app; report null so the Dart side can skip the snapshot.
+        result(nil);
+      } else {
+        result([FlutterStandardTypedData typedDataWithBytes:imageData]);
+      }
     } else {
       result([FlutterError errorWithCode:@"GoogleMap uninitialized"
                                  message:@"takeSnapshot called prior to map initialization"
